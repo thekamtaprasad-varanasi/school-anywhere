@@ -1,0 +1,65 @@
+export const dynamic = "force-dynamic";
+
+import { db } from "@/lib/db";
+import { school_settings, users } from "@/lib/schema";
+import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
+import { cookies } from "next/headers";
+import SettingsForm from "./SettingsForm";
+import Link from "next/link";
+
+export default async function SettingsPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  if (!token) redirect("/login");
+
+  const session = await getSession(token);
+  if (!session) redirect("/login");
+
+  const userResult = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, session.email));
+  const user = userResult[0];
+  if (!user) redirect("/login");
+
+  const result = await db
+    .select()
+    .from(school_settings)
+    .where(eq(school_settings.user_id, 2));
+  const s = result[0] || {};
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">School Settings</h1>
+        <p className="text-gray-500 text-sm mt-1">
+          This information will appear on receipts and report cards
+        </p>
+      </div>
+
+      {/* Quick Links */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 max-w-2xl">
+        <p className="text-xs text-gray-500 uppercase font-medium mb-3">
+          Other Settings
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/settings/periods"
+            className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-100 px-4 py-2 rounded-lg hover:bg-indigo-100 text-sm font-medium"
+          >
+            ⏱ Period Timings
+            <span className="text-xs text-indigo-400">
+              School-wide schedule
+            </span>
+          </Link>{" "}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl">
+        <SettingsForm settings={s} />{" "}
+      </div>
+    </div>
+  );
+}
