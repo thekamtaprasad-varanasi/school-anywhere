@@ -40,6 +40,7 @@ export async function GET(request) {
       { headers: { Authorization: `Bearer ${accessToken}` } },
     );
     const googleUser = await googleRes.json();
+
     if (!googleUser.email) {
       return NextResponse.redirect(new URL("/login?error=invalid", request.url));
     }
@@ -54,7 +55,6 @@ export async function GET(request) {
     }
 
     let existing = await db.select().from(users).where(eq(users.email, googleUser.email));
-    let user;
 
     if (existing.length === 0) {
       await db.insert(users).values({
@@ -67,7 +67,7 @@ export async function GET(request) {
       existing = await db.select().from(users).where(eq(users.email, googleUser.email));
     }
 
-    user = existing[0];
+    const user = existing[0];
 
     const token = await createSession(
       user.id,
